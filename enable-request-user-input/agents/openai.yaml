@@ -1,4 +1,0 @@
-interface:
-  display_name: "Enable Request User Input"
-  short_description: "Enable interactive questions in Codex Default mode"
-  default_prompt: "Use $enable-request-user-input to enable request_user_input in Default mode."
