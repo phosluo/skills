@@ -110,8 +110,8 @@ See [references/naming-and-fixups.md](references/naming-and-fixups.md) for filen
 
 ### 6. Filename rules
 
-- Prefer the video title as the final filename.
-- Keep the site identifier or video key in square brackets when it helps avoid collisions.
+- Use the source video title as the final filename by default.
+- Do not append site identifiers, video IDs, or keys in square brackets unless the user explicitly requests them, the source title is unavailable, or a collision must be resolved.
 - Sanitize illegal filename characters such as `/`.
 - If a title contains problematic characters, replace them conservatively rather than inventing a brand-new title.
 - If the user wants a simpler name, honor that request directly.
