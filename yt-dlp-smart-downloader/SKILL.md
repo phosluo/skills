@@ -29,7 +29,7 @@ Use this skill when the user asks to:
 - Check whether `yt-dlp` is available with `which yt-dlp`.
 - If `yt-dlp` is missing, install it before doing anything else.
 - If the request may need repair or remuxing, check whether `ffmpeg` exists with `which ffmpeg`.
-- Download into the user's current workspace unless they explicitly request another destination.
+- Download into `"$HOME/Downloads"` by default unless the user explicitly requests another destination.
 - Quote URLs and file paths carefully. Many media URLs contain `?`, `&`, or other shell-sensitive characters.
 
 ### 2. Decide whether to ask before downloading
@@ -86,9 +86,10 @@ Useful patterns:
 
 ```bash
 yt-dlp -F "<url>"
-yt-dlp -f "<format_id>" -P "<download_dir>" "<url>"
-yt-dlp -P "<download_dir>" "<url1>" "<url2>"
-yt-dlp -x --audio-format mp3 -P "<download_dir>" "<url>"
+DOWNLOAD_DIR="$HOME/Downloads"
+yt-dlp -f "<format_id>" -P "$DOWNLOAD_DIR" "<url>"
+yt-dlp -P "$DOWNLOAD_DIR" "<url1>" "<url2>"
+yt-dlp -x --audio-format mp3 -P "$DOWNLOAD_DIR" "<url>"
 ```
 
 ### 5. Repair and finalize
