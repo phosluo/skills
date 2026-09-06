@@ -1,0 +1,3 @@
+interface:
+  display_name: "Enable Context Management"
+  short_description: "Enable and verify Codex context management"
