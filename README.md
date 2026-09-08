@@ -12,6 +12,7 @@ A collection of reusable AI agent skills.
 | [packy-imagegen](packy-imagegen/) | Generate images via PackyAPI's gpt-image-2 endpoint and save verified PNG/JPEG files locally |
 | [yt-dlp-smart-downloader](yt-dlp-smart-downloader/) | Inspect formats, download media with yt-dlp, repair files with ffmpeg, and clean up filenames |
 | [markdown-to-applebooks](markdown-to-applebooks/) | Convert Markdown to EPUB with pandoc and copy into Apple Books |
+| [seed-inspired-design](seed-inspired-design/) | Use external random seeds to explore and implement distinctive visual design directions |
 
 ## Usage
 
