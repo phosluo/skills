@@ -13,6 +13,7 @@ A collection of reusable AI agent skills.
 | [yt-dlp-smart-downloader](yt-dlp-smart-downloader/) | Inspect formats, download media with yt-dlp, repair files with ffmpeg, and clean up filenames |
 | [markdown-to-applebooks](markdown-to-applebooks/) | Convert Markdown to EPUB with pandoc and copy into Apple Books |
 | [seed-inspired-design](seed-inspired-design/) | Use external random seeds to explore and implement distinctive visual design directions |
+| [string-seed-of-thought](string-seed-of-thought/) | Apply SSoT with shell-generated seeds for diverse generation and probabilistic choices |
 
 ## Usage
 
