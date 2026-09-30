@@ -14,6 +14,7 @@ A collection of reusable AI agent skills.
 | [markdown-to-applebooks](markdown-to-applebooks/) | Convert Markdown to EPUB with pandoc and copy into Apple Books |
 | [seed-inspired-design](seed-inspired-design/) | Use external random seeds to explore and implement distinctive visual design directions |
 | [string-seed-of-thought](string-seed-of-thought/) | Apply SSoT with shell-generated seeds for diverse generation and probabilistic choices |
+| [midi-compose](midi-compose/) | Compose original music in code: write MIDI with Python, render via FluidSynth + MuseScore_General SoundFont to loudness-normalized WAV |
 
 ## Usage
 
