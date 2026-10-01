@@ -272,27 +272,41 @@ def _check_score(notes, programs, tpq=480, bpb=4, chords=None, key=None):
                 continue
             shape = c['shape']
             fl = c['flats']
-            # 半音经过音：小节最后一拍上、与下一小节和弦音相距半音的音，是正当的
-            # 导向音（爵士 walking bass 的第 4 拍就是干这个的），不算调外音。
+            # 两类正当的半音写法不该报为调外音：
+            #  1) 半音经过音——小节最后一拍上、与下一小节和弦音相距半音的音
+            #     （爵士 walking bass 的第 4 拍）
+            #  2) 半音阶乐句——同一通道里连续 ≥3 个音、相邻恰好差半音
+            #     （影视配乐里的半音下行是常规手法，不是笔误）
             approach = set()
             nb = chords[bar + 1] if bar + 1 < len(chords) else None
             if nb:
                 nc = parse_chord(nb)
                 if nc:
                     last_beat = (bar * bpb + bpb - 1) * tpq
-                    tail = {p % 12 for t, p in recs if t >= last_beat}
-                    for x in tail:
-                        if (x + 1) % 12 in nc['pcs'] or (x - 1) % 12 in nc['pcs']:
-                            approach.add(x)
+                    for t, p in recs:
+                        if t >= last_beat:
+                            x = p % 12
+                            if (x + 1) % 12 in nc['pcs'] or (x - 1) % 12 in nc['pcs']:
+                                approach.add(x)
+            for ch, r in mel.items():
+                seq = sorted((t, p) for t, p, _, _ in r if t // (tpq * bpb) == bar)
+                i = 0
+                while i < len(seq):
+                    j = i
+                    while j + 1 < len(seq) and abs(seq[j + 1][1] - seq[j][1]) == 1:
+                        j += 1
+                    if j - i + 1 >= 3:
+                        approach.update(seq[k][1] % 12 for k in range(i, j + 1))
+                    i = j + 1 if j > i else i + 1
             if len(shape) >= 3:
-                # 只有一件乐器在响（前奏、breakdown）时不查骨干音——
+                # 只有一件乐器在响、或整小节只有一两个音级时（前奏、breakdown）不查骨干音——
                 # 独奏贝斯本来就不会把三音七音全奏出来。
                 active = sum(1 for r in mel.values()
                              if any(t // (tpq * bpb) == bar for t, _, _, _ in r))
                 third = (c['root'] + shape[1]) % 12
                 missing = [x for x in ([third] + ([(c['root'] + shape[3]) % 12] if len(shape) > 3 else []))
                            if x not in pcs]
-                if missing and active >= 2:
+                if missing and active >= 2 and len(pcs) >= 3:
                     add('warn', 'chord-tone',
                         f'bar{bar + 1}({sym}) 少了骨干音 ' + ', '.join(_pcn(x, fl) for x in missing)
                         + f'（实际出现 {" ".join(_pcn(x, fl) for x in sorted(pcs))}）')
