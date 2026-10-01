@@ -119,7 +119,7 @@ class Song:
     # ── 输出 ──
     def write_midi(self, path, tail_beats=2.0):
         end = max((t for evs in self.events.values() for t, _, _ in evs), default=0) + round(tail_beats * self.tpq)
-        tracks = [self._track([(0, 0, b'\xff\x51\x03' + (60_000_000 // self.bpm).to_bytes(3, 'big')),
+        tracks = [self._track([(0, 0, b'\xff\x51\x03' + round(60_000_000 / self.bpm).to_bytes(3, 'big')),
                                (0, 0, bytes([0xFF, 0x58, 4, self.bpb, 2, 24, 8]))], end)]
         for ch in sorted(self.events):
             bank, program, vol, pan, rev, cho = self.setup.get(ch, (0, 0, 100, 64, 30, 0))
