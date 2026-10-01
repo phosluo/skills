@@ -45,9 +45,18 @@ Example:
 
 ```bash
 pandoc /absolute/path/input.md \
+  -f markdown+lists_without_preceding_blankline \
   -o "$PWD/input.epub" \
   --metadata title='Document Title'
 ```
+
+Always pass `-f markdown+lists_without_preceding_blankline`. Obsidian and many
+other Markdown editors start a list on the line right after a paragraph with no
+blank line in between. Pandoc's default `markdown` reader treats those items as
+continuations of the paragraph and silently merges the whole list into one
+paragraph, which is invisible until someone reads the EPUB. The extension keeps
+every other pandoc Markdown behavior (math, footnotes, tables) and only changes
+how a list that follows text without a blank line is parsed.
 
 Title selection rule:
 
