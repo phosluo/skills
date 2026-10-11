@@ -33,7 +33,7 @@ Do not use this skill for:
 2. Resolve `scripts/generate_chart.py` relative to this `SKILL.md`, then run it with the user's target directory as the working directory:
 
 ```bash
-python3 <skill-directory>/scripts/generate_chart.py
+python3.15 <skill-directory>/scripts/generate_chart.py
 ```
 
 3. Verify the PNG exists in the working directory.
@@ -44,7 +44,7 @@ python3 <skill-directory>/scripts/generate_chart.py
 Use these when the user wants a different range or filename:
 
 ```bash
-python3 <skill-directory>/scripts/generate_chart.py \
+python3.15 <skill-directory>/scripts/generate_chart.py \
   --start-date 2010-01-01 \
   --output custom-name.png
 ```
@@ -59,10 +59,13 @@ Defaults:
 - The script uses:
   - `averagePETTM` as equal-weight PE
   - `equalWeightAveragePB` as equal-weight PB
+- Use `python3.15`, not `python3`. On this machine `python3` resolves to a Homebrew
+  interpreter whose environment has no numpy/pandas, so the script fails there with
+  `ModuleNotFoundError`.
 - If Python dependencies are missing, install:
 
 ```bash
-python3 -m pip install --user akshare pandas matplotlib
+python3.15 -m pip install akshare pandas matplotlib
 ```
 
 - The script prints the actual returned date range so the user can see whether AKShare starts later than requested.

@@ -69,7 +69,7 @@ def load_equal_weight_series(dataset: str) -> list[tuple[date, float]]:
         missing = exc.name or "dependency"
         raise SystemExit(
             f"Missing Python package: {missing}. "
-            "Install with: python3 -m pip install --user akshare pandas matplotlib"
+            "Install with: python3.15 -m pip install akshare pandas matplotlib"
         ) from exc
 
     loaders = {
@@ -121,7 +121,7 @@ def plot_dual_series(
     except ModuleNotFoundError as exc:
         raise SystemExit(
             "Missing Python package: matplotlib. "
-            "Install with: python3 -m pip install --user matplotlib"
+            "Install with: python3.15 -m pip install matplotlib"
         ) from exc
 
     pe_dates = [point_date for point_date, _ in pe_points]
