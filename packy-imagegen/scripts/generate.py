@@ -18,6 +18,7 @@ from typing import Any
 
 
 DEFAULT_BASE_URL = "https://www.packyapi.com/v1"
+DEFAULT_MODEL = "gpt-image-2.5-flare"
 VALID_QUALITY = ("low", "medium", "high", "auto")
 VALID_FORMAT = ("png", "jpeg")
 
@@ -28,12 +29,13 @@ class ImagegenError(RuntimeError):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate one gpt-image-2 image through PackyAPI."
+        description="Generate one image through PackyAPI."
     )
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--prompt")
     source.add_argument("--prompt-file", type=Path)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--size", default="1024x1024")
     parser.add_argument("--quality", choices=VALID_QUALITY, default="medium")
     parser.add_argument("--output-format", choices=VALID_FORMAT, default="png")
@@ -191,19 +193,18 @@ def main() -> int:
         if args.out.suffix.lower() not in ({".jpg", ".jpeg"} if args.output_format == "jpeg" else {".png"}):
             raise ImagegenError(f"Output path must use the {expected_suffix} extension.")
         payload = {
-            "model": "gpt-image-2",
+            "model": args.model,
             "prompt": prompt,
             "n": 1,
             "size": args.size,
             "quality": args.quality,
             "output_format": args.output_format,
-            "response_format": "b64_json",
             "moderation": args.moderation,
         }
         if args.dry_run:
             print(json.dumps({"endpoint": f"{args.base_url.rstrip('/')}/images/generations", "out": str(args.out), **payload}, ensure_ascii=False, indent=2))
             return 0
-        print("Calling PackyAPI gpt-image-2; this may take several minutes.", file=sys.stderr)
+        print(f"Calling PackyAPI {args.model}; this may take several minutes.", file=sys.stderr)
         result = request_json(
             f"{args.base_url.rstrip('/')}/images/generations",
             payload,
