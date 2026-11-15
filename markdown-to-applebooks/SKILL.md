@@ -1,128 +1,123 @@
 ---
 name: markdown-to-applebooks
-description: Convert a local Markdown file into an EPUB with pandoc and copy it into the user's Apple Books iCloud Documents folder. Use when the user asks to turn Markdown into an EPUB for Apple Books, send a note or article to Apple Books, export Markdown to Books, or automate the Markdown -> EPUB -> Apple Books workflow.
+description: Convert a local Markdown document into an EPUB with resolved author metadata and an original content-related cover, then copy it into the user's Apple Books iCloud Documents folder. Use when the user asks to turn Markdown into an EPUB for Apple Books, send a note or article to Books, export Markdown to Books, or automate a Markdown-to-EPUB-to-Apple-Books workflow.
 ---
 
 # Markdown To Apple Books
 
-Use this skill when the user wants a local Markdown document turned into an EPUB and placed into Apple Books.
+Turn a Markdown document into an Apple Books-ready EPUB. Resolve the book's identity before conversion: one original title, the correct author metadata, and a cover that belongs to this document.
 
-This skill is for a very specific workflow:
-1. Find the Markdown file.
-2. Convert it to EPUB with `pandoc`.
-3. Resolve the Apple Books iCloud folder on the current machine.
-4. Copy the EPUB into that folder.
-5. Confirm the file exists in the destination.
+## Workflow
 
-Keep the workflow simple. Do not add extra formatting work unless the user asks for it.
+### 1. Find the source
 
-## What To Do
+Work from the Markdown file the user names. If no path is given, search the current workspace for likely `.md` files and choose the most obvious candidate from context.
 
-### 1. Confirm the source file
+If several files are plausible and choosing wrong would be disruptive, ask one short clarifying question. Otherwise proceed.
 
-Work from the Markdown file the user names. If they do not give a path, search the current workspace for likely `.md` files and make a reasonable guess from context.
+### 2. Resolve the title and author
 
-If there are multiple plausible files and the choice is risky, ask one short clarifying question. Otherwise proceed.
+**Title**
 
-### 2. Build the EPUB
+- Use an explicit title from YAML front matter when present.
+- Otherwise use the first level-1 heading only if it reads as the document title rather than a section heading.
+- Otherwise derive a clean title from the filename.
+- Preserve the resolved title verbatim. Do not translate it, shorten it, or substitute a different-language title.
+- The EPUB title and the cover title must be identical.
 
-Check whether `pandoc` is available:
+Treat headings such as `Introduction`, `Preface`, `Chapter 1`, or `Introduction 引言` as section headings unless the user says otherwise.
+
+**Author**
+
+- Use explicit author metadata from front matter or the document's byline when available.
+- Otherwise inspect the opening pages, copyright page, ISBN, or source links.
+- When the author is not established by the document, research the title and author online. Prefer publisher pages, library catalogs, Open Library, Google Books, and author sites.
+- For a translation, summary, or adaptation, identify the original author unless the user specifically wants the translator or adapter credited.
+- Keep all genuinely credited authors. Do not merge distinct people into one name.
+- Never invent an author. If reasonable research does not settle it, ask one concise question. If the user does not know or does not care, use `Unknown`.
+
+Do not block the conversion on title or author research when the source clearly supplies both.
+
+### 3. Make the cover
+
+Create an original cover for this document. Choose the visual direction, imagery, typography, and composition yourself; there is no required template or style.
+
+The cover must:
+
+- use the resolved title verbatim, in its original language;
+- relate to the document's actual subject, argument, or story;
+- remain legible at Apple Books thumbnail size;
+- avoid invented publisher marks, awards, endorsements, or factual claims;
+- not add a translated title or an alternate title that competes with the original.
+
+The cover may include the author name and other visual text when useful, but none of it should change or replace the original title.
+
+Write the cover to a local image file and inspect the result before embedding it. If the title is unreadable, cropped, or the image does not fit the content, revise the cover.
+
+### 4. Build the EPUB
+
+Check that `pandoc` is available:
 
 ```bash
 which pandoc
 ```
 
-If `pandoc` is present, convert the file directly. Write the EPUB next to the Markdown file unless the user asked for a different output path.
-By default, write the generated EPUB to the current working directory:
+If `pandoc` is missing, say so plainly and stop. Do not invent a fallback converter unless the user asks.
 
-```bash
-$PWD
-```
+Write the EPUB to the current working directory by default, using the Markdown filename as the EPUB filename unless the user asks for another name.
 
-Do not scatter generated EPUB files beside arbitrary source Markdown files unless the user explicitly asks for that behavior.
-
-Example:
+Pass the resolved title, author metadata, and cover image to pandoc:
 
 ```bash
 pandoc /absolute/path/input.md \
   -f markdown+lists_without_preceding_blankline \
-  -o "$PWD/input.epub" \
-  --metadata title='Document Title'
+  --metadata title="$TITLE" \
+  --metadata author="$AUTHOR" \
+  --epub-cover-image=/absolute/path/cover.png \
+  -o "$PWD/input.epub"
 ```
 
-Always pass `-f markdown+lists_without_preceding_blankline`. Obsidian and many
-other Markdown editors start a list on the line right after a paragraph with no
-blank line in between. Pandoc's default `markdown` reader treats those items as
-continuations of the paragraph and silently merges the whole list into one
-paragraph, which is invisible until someone reads the EPUB. The extension keeps
-every other pandoc Markdown behavior (math, footnotes, tables) and only changes
-how a list that follows text without a blank line is parsed.
+For multiple authors, use a temporary YAML metadata file with an `author` list, then pass it with `--metadata-file`. Keep the title and author values exactly as resolved.
 
-Title selection rule:
+Always pass `-f markdown+lists_without_preceding_blankline`. Obsidian and many other Markdown editors start a list on the line right after a paragraph with no blank line in between. Pandoc's default `markdown` reader treats those items as continuations of the paragraph and silently merges the whole list into one paragraph, which is invisible until someone reads the EPUB.
 
-1. Start from the filename as the default EPUB title.
-2. Derive a clean human-readable title from the filename:
-   - remove the `.md` extension,
-   - replace hyphens and underscores with spaces,
-   - collapse awkward separators,
-   - convert obvious slug-style names into normal title case when that improves readability.
-3. Then read the Markdown file and look for the first level-1 heading, a line that starts with `# `.
-4. Use that heading only if it clearly looks like the document title rather than a section heading.
-5. If the first level-1 heading looks generic or section-like, keep the filename-derived title.
+### 5. Verify the EPUB
 
-Treat headings like these as section-like unless the user explicitly wants otherwise:
-- `Introduction`
-- `Intro`
-- `Preface`
-- `Foreword`
-- `Chapter 1`
-- `Part I`
-- headings that end with `Introduction` in another language pair, such as `Introduction 引言`
+Before copying, confirm that:
 
-Examples:
-- `office-hours-skill-bilingual.md` -> `Office Hours Skill Bilingual`
-- `my_notes_on_prompting.md` -> `My Notes On Prompting`
-- `The Algorithm.md` with first heading `# Introduction 引言` -> `The Algorithm`
+- the EPUB file exists and is non-empty;
+- the cover image is present in the EPUB and referenced by the package;
+- the OPF title matches the resolved title exactly;
+- the OPF author metadata matches the resolved author list;
+- the cover displayed in the EPUB is the same image you inspected.
 
-Do not block the workflow on perfect title generation. Pick a clean, reasonable title and continue.
+Useful checks include:
 
-If `pandoc` is missing, say so plainly and stop. Do not invent a fallback converter unless the user asks.
+```bash
+unzip -l "$EPUB"
+unzip -p "$EPUB" EPUB/content.opf
+```
 
-### 3. Resolve the Apple Books destination
+If `epubcheck` is available, run it as an additional check. If the cover, title, or author is missing, fix the build before copying.
 
-Do not hardcode a username-specific path.
+### 6. Copy into Apple Books
 
-Start with the standard Apple Books iCloud path relative to the current home directory:
+Do not hardcode a username-specific path. Resolve the standard Apple Books iCloud directory from the current home directory:
 
 ```bash
 BOOKS_DIR="$HOME/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents"
-```
-
-Check that it exists before copying:
-
-```bash
 test -d "$BOOKS_DIR"
 ```
 
-If it exists, use it.
+If it does not exist, say so plainly and stop.
 
-If it does not exist, say so plainly and stop. Do not guess random alternatives unless the user asks.
-
-### 4. Copy into Apple Books
-
-Copy the generated EPUB there using the same filename unless the user asked for a rename.
-
-Example:
+Copy the verified EPUB there using the same filename unless the user requested a rename:
 
 ```bash
 cp /absolute/path/input.epub "$BOOKS_DIR/input.epub"
 ```
 
-This path is often outside the writable sandbox. If the copy fails with a sandbox permission error, immediately rerun the copy with escalated permissions. Do not stop at the first failure.
-
-### 5. Verify
-
-Always verify the final file exists in Apple Books:
+This path is often outside the writable sandbox. If the copy fails with a sandbox permission error, retry with escalated permissions. Then verify:
 
 ```bash
 ls -lh "$BOOKS_DIR/input.epub"
@@ -130,21 +125,25 @@ ls -lh "$BOOKS_DIR/input.epub"
 
 If verification fails because of sandbox restrictions, rerun the verification with escalated permissions.
 
-## Default Behavior
+## Defaults
 
-- Prefer the Markdown file the user most recently worked on when context makes that obvious.
-- Keep the EPUB filename aligned with the Markdown filename.
-- Put generated EPUB files in the current working directory by default.
 - Preserve the original Markdown file.
-- Do not move files, only copy the EPUB into Apple Books unless the user explicitly asks otherwise.
-- Do not add cover images, CSS, or table-of-contents tuning unless requested.
+- Put the generated EPUB in the current working directory by default.
+- Use the resolved title consistently in the EPUB metadata and on the cover.
+- Keep the original title's language. Never put a translated title on the cover in place of the original.
+- Add author metadata rather than leaving the book unattributed when reliable evidence exists.
+- Make a new content-related cover for the document. The visual approach is yours.
+- Do not add CSS or table-of-contents tuning unless the user asks.
+- Do not move files; only copy the EPUB into Apple Books.
 
 ## What To Report Back
 
 Be concise. Tell the user:
-1. which Markdown file was used,
-2. where the EPUB was written, defaulting to the current working directory,
-3. where it was copied in Apple Books,
-4. whether verification succeeded.
+
+1. which Markdown file was used;
+2. the resolved title and author(s);
+3. where the cover and EPUB were written;
+4. where the EPUB was copied in Apple Books;
+5. whether the EPUB metadata and cover verification passed.
 
 If something failed, say exactly which step failed and why.

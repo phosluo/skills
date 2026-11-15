@@ -11,7 +11,7 @@ A collection of reusable AI agent skills.
 | [enable-context-management](enable-context-management/) | Enable and verify Codex experimental context management mode |
 | [packy-imagegen](packy-imagegen/) | Generate images via PackyAPI's gpt-image-2.5-flare endpoint and save verified PNG/JPEG files locally |
 | [yt-dlp-smart-downloader](yt-dlp-smart-downloader/) | Inspect formats, download media with yt-dlp, repair files with ffmpeg, and clean up filenames |
-| [markdown-to-applebooks](markdown-to-applebooks/) | Convert Markdown to EPUB with pandoc and copy into Apple Books |
+| [markdown-to-applebooks](markdown-to-applebooks/) | Convert Markdown to an EPUB with author metadata and a content-related cover, then copy into Apple Books |
 | [seed-inspired-design](seed-inspired-design/) | Use external random seeds to explore and implement distinctive visual design directions |
 | [string-seed-of-thought](string-seed-of-thought/) | Apply SSoT with shell-generated seeds for diverse generation and probabilistic choices |
 | [midi-compose](midi-compose/) | Compose original music in code: write MIDI with Python, render via FluidSynth + MuseScore_General SoundFont to loudness-normalized WAV |
