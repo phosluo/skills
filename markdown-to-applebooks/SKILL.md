@@ -111,17 +111,79 @@ test -d "$BOOKS_DIR"
 
 If it does not exist, say so plainly and stop.
 
-Copy the verified EPUB there using the same filename unless the user requested a rename:
+Copy the verified EPUB there using the same filename unless the user requested a rename. Before replacing an existing EPUB, preserve its Apple Books identity attributes. A plain `cp` over a regular macOS file clears extended attributes, which can make an existing book disappear from iCloud and other Apple Books devices.
+
+Run the snapshot, replacement, restore, and verification in one shell so the saved values remain available:
 
 ```bash
-cp /absolute/path/input.epub "$BOOKS_DIR/input.epub"
+set -euo pipefail
+
+dest="$BOOKS_DIR/input.epub"
+source_epub="/absolute/path/input.epub"
+
+asset_id_hex=""
+generation=""
+title_hex=""
+author_hex=""
+genre_hex=""
+supplemental_hex=""
+fpfs_hex=""
+
+if [ -e "$dest" ]; then
+  if [ -L "$dest" ] || [ ! -f "$dest" ]; then
+    echo "Refusing to replace a non-file EPUB package: $dest" >&2
+    exit 1
+  fi
+
+  asset_id_hex=$(xattr -px 'com.apple.iBooks.assetID#S' "$dest" 2>/dev/null || true)
+  generation=$(xattr -p 'com.apple.iBooks.generation#S' "$dest" 2>/dev/null || true)
+  title_hex=$(xattr -px 'com.apple.iBooks.title#S' "$dest" 2>/dev/null || true)
+  author_hex=$(xattr -px 'com.apple.iBooks.author#S' "$dest" 2>/dev/null || true)
+  genre_hex=$(xattr -px 'com.apple.iBooks.genre#S' "$dest" 2>/dev/null || true)
+  supplemental_hex=$(xattr -px 'com.apple.iBooks.isSupplementalContent#S' "$dest" 2>/dev/null || true)
+  fpfs_hex=$(xattr -px 'com.apple.fileprovider.fpfs#P' "$dest" 2>/dev/null || true)
+
+  if [ -z "$asset_id_hex" ]; then
+    echo "Refusing to overwrite: existing EPUB has no Books assetID." >&2
+    exit 1
+  fi
+fi
+
+cp "$source_epub" "$dest"
+
+if [ -n "$asset_id_hex" ]; then
+  xattr -wx 'com.apple.iBooks.assetID#S' "$asset_id_hex" "$dest"
+  [ -z "$title_hex" ]  || xattr -wx 'com.apple.iBooks.title#S'  "$title_hex"  "$dest"
+  [ -z "$author_hex" ] || xattr -wx 'com.apple.iBooks.author#S' "$author_hex" "$dest"
+  [ -z "$genre_hex" ]  || xattr -wx 'com.apple.iBooks.genre#S'  "$genre_hex"  "$dest"
+  [ -z "$supplemental_hex" ] || xattr -wx 'com.apple.iBooks.isSupplementalContent#S' "$supplemental_hex" "$dest"
+  [ -z "$fpfs_hex" ]   || xattr -wx 'com.apple.fileprovider.fpfs#P' "$fpfs_hex" "$dest"
+
+  case "$generation" in
+    ''|*[!0-9]*) generation=1 ;;
+  esac
+  generation=$((generation + 1))
+  xattr -w 'com.apple.iBooks.generation#S' "$generation" "$dest"
+fi
+
+touch "$dest"
+
+cmp "$source_epub" "$dest"
+if [ -n "$asset_id_hex" ]; then
+  test "$(xattr -px 'com.apple.iBooks.assetID#S' "$dest")" = "$asset_id_hex"
+  test -z "$title_hex"  || test "$(xattr -px 'com.apple.iBooks.title#S'  "$dest")" = "$title_hex"
+  test -z "$author_hex" || test "$(xattr -px 'com.apple.iBooks.author#S' "$dest")" = "$author_hex"
+  test -z "$genre_hex"  || test "$(xattr -px 'com.apple.iBooks.genre#S'  "$dest")" = "$genre_hex"
+  test -z "$supplemental_hex" || test "$(xattr -px 'com.apple.iBooks.isSupplementalContent#S' "$dest")" = "$supplemental_hex"
+  test -z "$fpfs_hex"   || test "$(xattr -px 'com.apple.fileprovider.fpfs#P' "$dest")" = "$fpfs_hex"
+  test "$(xattr -p 'com.apple.iBooks.generation#S' "$dest")" = "$generation"
+fi
+ls -lh "$dest"
 ```
 
-This path is often outside the writable sandbox. If the copy fails with a sandbox permission error, retry with escalated permissions. Then verify:
+Incrementing `generation` tells Books that the existing asset has new content while retaining its identity. Refuse to replace directory-style EPUB packages or existing files without a Books `assetID`; use a different filename instead.
 
-```bash
-ls -lh "$BOOKS_DIR/input.epub"
-```
+This path is often outside the writable sandbox. If a copy or attribute operation fails with a sandbox permission error, retry the same step with escalated permissions. Do not skip the attribute restore or verification.
 
 If verification fails because of sandbox restrictions, rerun the verification with escalated permissions.
 
@@ -135,6 +197,7 @@ If verification fails because of sandbox restrictions, rerun the verification wi
 - Make a new content-related cover for the document. The visual approach is yours.
 - Do not add CSS or table-of-contents tuning unless the user asks.
 - Do not move files; only copy the EPUB into Apple Books.
+- When replacing an existing Books EPUB, preserve and verify its Books/iCloud identity attributes. Never treat a plain `cp` as a safe update.
 
 ## What To Report Back
 
@@ -143,7 +206,7 @@ Be concise. Tell the user:
 1. which Markdown file was used;
 2. the resolved title and author(s);
 3. where the cover and EPUB were written;
-4. where the EPUB was copied in Apple Books;
-5. whether the EPUB metadata and cover verification passed.
+4. where the EPUB was copied in Apple Books, and whether it was added or replaced;
+5. whether the EPUB metadata, cover, Books identity attributes, and sync-safe replacement verification passed.
 
 If something failed, say exactly which step failed and why.
