@@ -1,11 +1,11 @@
 ---
 name: markdown-to-applebooks
-description: Convert a local Markdown document into an EPUB with resolved author metadata and an original content-related cover, then copy it into the user's Apple Books iCloud Documents folder. Use when the user asks to turn Markdown into an EPUB for Apple Books, send a note or article to Books, export Markdown to Books, or automate a Markdown-to-EPUB-to-Apple-Books workflow.
+description: Convert a local Markdown document into a single-file EPUB archive with resolved author metadata and an original content-related cover, then copy it into the user's Apple Books iCloud Documents folder. Use when the user asks to turn Markdown into an EPUB for Apple Books, send a note or article to Books, export Markdown to Books, or automate a Markdown-to-EPUB-to-Apple-Books workflow.
 ---
 
 # Markdown To Apple Books
 
-Turn a Markdown document into an Apple Books-ready EPUB. Resolve the book's identity before conversion: one original title, the correct author metadata, and a cover that belongs to this document.
+Turn a Markdown document into an Apple Books-ready EPUB. Resolve the book's identity before conversion: one original title, the correct author metadata, and a cover that belongs to this document. Deliver one standard single-file EPUB archive, never an exploded EPUB directory.
 
 ## Workflow
 
@@ -54,7 +54,9 @@ The cover may include the author name and other visual text when useful, but non
 
 Write the cover to a local image file and inspect the result before embedding it. If the title is unreadable, cropped, or the image does not fit the content, revise the cover.
 
-### 4. Build the EPUB
+### 4. Build a single-file EPUB archive
+
+The deliverable is one standard `.epub` file backed by a ZIP archive. Do not unpack it or place an exploded EPUB package directory in Apple Books.
 
 Check that `pandoc` is available:
 
@@ -81,11 +83,14 @@ For multiple authors, use a temporary YAML metadata file with an `author` list, 
 
 Always pass `-f markdown+lists_without_preceding_blankline`. Obsidian and many other Markdown editors start a list on the line right after a paragraph with no blank line in between. Pandoc's default `markdown` reader treats those items as continuations of the paragraph and silently merges the whole list into one paragraph, which is invisible until someone reads the EPUB.
 
+Pandoc writes the EPUB as a single ZIP-based file. Keep that file intact for delivery; do not unzip it into the Books folder.
+
 ### 5. Verify the EPUB
 
 Before copying, confirm that:
 
 - the EPUB file exists and is non-empty;
+- the EPUB is one regular file, is a complete ZIP archive, and has `application/epub+zip` as its `mimetype`;
 - the cover image is present in the EPUB and referenced by the package;
 - the OPF title matches the resolved title exactly;
 - the OPF author metadata matches the resolved author list;
@@ -94,6 +99,9 @@ Before copying, confirm that:
 Useful checks include:
 
 ```bash
+test -f "$EPUB" && test -s "$EPUB"
+test "$(unzip -p "$EPUB" mimetype)" = "application/epub+zip"
+unzip -t "$EPUB" >/dev/null
 unzip -l "$EPUB"
 unzip -p "$EPUB" EPUB/content.opf
 ```
@@ -128,6 +136,19 @@ author_hex=""
 genre_hex=""
 supplemental_hex=""
 fpfs_hex=""
+
+if [ -L "$source_epub" ] || [ ! -f "$source_epub" ]; then
+  echo "Source must be a single-file EPUB archive: $source_epub" >&2
+  exit 1
+fi
+if [ "$(unzip -p "$source_epub" mimetype 2>/dev/null)" != "application/epub+zip" ]; then
+  echo "Source is not a valid single-file EPUB archive: $source_epub" >&2
+  exit 1
+fi
+if ! unzip -t "$source_epub" >/dev/null; then
+  echo "Source EPUB ZIP is incomplete: $source_epub" >&2
+  exit 1
+fi
 
 if [ -e "$dest" ]; then
   if [ -L "$dest" ] || [ ! -f "$dest" ]; then
@@ -195,6 +216,7 @@ If verification fails because of sandbox restrictions, rerun the verification wi
 - Keep the original title's language. Never put a translated title on the cover in place of the original.
 - Add author metadata rather than leaving the book unattributed when reliable evidence exists.
 - Make a new content-related cover for the document. The visual approach is yours.
+- Deliver a single-file `.epub` ZIP archive. Never place an exploded EPUB directory in Apple Books.
 - Do not add CSS or table-of-contents tuning unless the user asks.
 - Do not move files; only copy the EPUB into Apple Books.
 - When replacing an existing Books EPUB, preserve and verify its Books/iCloud identity attributes. Never treat a plain `cp` as a safe update.
@@ -205,8 +227,8 @@ Be concise. Tell the user:
 
 1. which Markdown file was used;
 2. the resolved title and author(s);
-3. where the cover and EPUB were written;
-4. where the EPUB was copied in Apple Books, and whether it was added or replaced;
+3. where the cover and single-file EPUB were written;
+4. where the single-file EPUB was copied in Apple Books, and whether it was added or replaced;
 5. whether the EPUB metadata, cover, Books identity attributes, and sync-safe replacement verification passed.
 
 If something failed, say exactly which step failed and why.
