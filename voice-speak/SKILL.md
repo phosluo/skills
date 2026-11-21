@@ -26,7 +26,7 @@ bash scripts/install.sh
 如果技能装在 Codex 默认位置，完整命令是：
 
 ```bash
-bash "$HOME/.agents/skills/voice-speak/scripts/install.sh"
+bash "$HOME/.codex/skills/voice-speak/scripts/install.sh"
 ```
 
 安装脚本会创建 `~/.local/share/voice-speak/venv`、安装 `edge-tts`、复制朗读脚本和默认配置，并生成 `~/.local/bin/voice-speak`。
