@@ -1,0 +1,12 @@
+{
+  "engine": "auto",
+  "edge_voice_zh": "zh-CN-XiaoxiaoNeural",
+  "edge_voice_en": "en-US-AriaNeural",
+  "say_voice_zh": "Tingting",
+  "say_voice_en": "Samantha",
+  "edge_rate": "+8%",
+  "say_rate": 190,
+  "max_chars": 0,
+  "queue_chunk_chars": 200,
+  "timeout_seconds": 8
+}

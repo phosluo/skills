@@ -15,6 +15,7 @@ A collection of reusable AI agent skills.
 | [seed-inspired-design](seed-inspired-design/) | Use external random seeds to explore and implement distinctive visual design directions |
 | [string-seed-of-thought](string-seed-of-thought/) | Apply SSoT with shell-generated seeds for diverse generation and probabilistic choices |
 | [midi-compose](midi-compose/) | Compose original music in code: write MIDI with Python, render via FluidSynth + MuseScore_General SoundFont to loudness-normalized WAV |
+| [voice-speak](voice-speak/) | Speak text aloud on macOS with free Edge neural voices, queue long text, and fall back to offline `say` |
 
 ## Usage
 
