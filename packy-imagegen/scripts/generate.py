@@ -17,8 +17,8 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_BASE_URL = "https://www.packyapi.com/v1"
-DEFAULT_MODEL = "gpt-image-2.5-flare"
+DEFAULT_BASE_URL = "https://cf.api.fan/v1"
+DEFAULT_MODEL = "gpt-image-2.6-flare"
 VALID_QUALITY = ("low", "medium", "high", "auto")
 VALID_FORMAT = ("png", "jpeg")
 
