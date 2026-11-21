@@ -55,6 +55,59 @@ def load_config() -> dict:
     return config
 
 
+def save_config(config: dict) -> None:
+    APP_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = CONFIG_FILE.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(CONFIG_FILE)
+
+
+def set_voice(config: dict, spec: str) -> tuple[str, str]:
+    spec = spec.strip()
+    if spec.startswith("say:"):
+        parts = spec.split(":", 2)
+        if len(parts) != 3 or parts[1] not in ("zh", "en") or not parts[2]:
+            raise ValueError("say voice format: say:zh:Tingting or say:en:Samantha")
+        key = f"say_voice_{parts[1]}"
+        config[key] = parts[2]
+        return key, parts[2]
+    if re.match(r"^(zh|en)-", spec):
+        key = f"edge_voice_{spec.split('-', 1)[0]}"
+        config[key] = spec
+        return key, spec
+    raise ValueError(
+        "voice must start with zh- or en- (Edge), or use say:zh:Name / say:en:Name"
+    )
+
+
+def set_config_value(config: dict, assignment: str) -> tuple[str, object]:
+    if "=" not in assignment:
+        raise ValueError("config format: KEY=VALUE")
+    key, raw = assignment.split("=", 1)
+    key = key.strip()
+    raw = raw.strip()
+    if key not in DEFAULTS:
+        raise ValueError(f"unknown config key: {key}")
+    if key == "engine":
+        if raw not in ("auto", "edge", "say"):
+            raise ValueError("engine must be auto, edge, or say")
+        value: object = raw
+    elif key in ("max_chars", "queue_chunk_chars", "timeout_seconds"):
+        try:
+            value = int(raw)
+        except ValueError:
+            raise ValueError(f"{key} must be an integer") from None
+        minimum = 0 if key == "max_chars" else 1
+        if value < minimum:
+            raise ValueError(f"{key} must be >= {minimum}")
+    else:
+        if not raw:
+            raise ValueError(f"{key} cannot be empty")
+        value = raw
+    config[key] = value
+    return key, value
+
+
 def log(message: str) -> None:
     ensure_dirs()
     try:
@@ -404,6 +457,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-chars", type=int, default=config["max_chars"], help="0 means no truncation")
     parser.add_argument("--wait", action="store_true", help="Wait until the whole queue finishes")
     parser.add_argument("--stop", action="store_true", help="Stop current playback and queue")
+    parser.add_argument(
+        "--set-voice",
+        metavar="VOICE",
+        help="Save VOICE as this machine's default without speaking; say voices use say:zh:Name",
+    )
+    parser.add_argument(
+        "--set-config",
+        metavar="KEY=VALUE",
+        action="append",
+        help="Save a config value, for example edge_rate=+10%%",
+    )
+    parser.add_argument("--show-config", action="store_true", help="Print config path and current values")
     parser.add_argument("--dry-run", action="store_true", help="Print text, voice, and chunk count without speaking")
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--worker", help=argparse.SUPPRESS)
@@ -413,6 +478,26 @@ def main(argv: list[str] | None = None) -> int:
         return run_worker(Path(args.worker))
 
     ensure_dirs()
+
+    if args.show_config:
+        print(f"config: {CONFIG_FILE}")
+        print(json.dumps(config, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.set_voice or args.set_config:
+        try:
+            if args.set_voice:
+                set_voice(config, args.set_voice)
+            for assignment in args.set_config or []:
+                set_config_value(config, assignment)
+        except ValueError as exc:
+            parser.error(str(exc))
+        save_config(config)
+        if not args.quiet:
+            print(f"saved config: {CONFIG_FILE}")
+            print(f"edge zh={config['edge_voice_zh']}  en={config['edge_voice_en']}")
+            print(f"say  zh={config['say_voice_zh']}  en={config['say_voice_en']}")
+        return 0
 
     if args.stop:
         stop_playback()

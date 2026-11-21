@@ -86,12 +86,29 @@ cp scripts/config.json ~/.local/share/voice-speak/
 "$HOME/.local/bin/voice-speak" --voice zh-CN-YunxiNeural "测试全部通过。"
 ```
 
-用户没有指定时保持默认，不要每次换音色。
+`--voice` 只影响当次调用。用户选定长期使用的音色后，保存为本机默认：
+
+```bash
+"$HOME/.local/bin/voice-speak" --set-voice zh-CN-YunxiNeural
+```
+
+保存后不需要再传 `--voice`。音色按语言分别保存，`zh-*` 写入中文槽位，`en-*` 写入英文槽位。离线 `say` 音色用 `say:zh:Tingting` 或 `say:en:Samantha` 的格式保存。
+
+查看当前选择和配置路径：
+
+```bash
+"$HOME/.local/bin/voice-speak" --show-config
+```
+
+本机配置保存在 `~/.local/share/voice-speak/config.json`，重装 skill 不会覆盖。环境变量 `VOICE_SPEAK_VOICE` 优先级更高，设置后会覆盖这里的音色。用户没有指定时保持已保存的选择，不要每次换音色。
 
 ## 参数
 
 - `--wait`：等整个队列播放结束再返回。用户要求“读完再继续”时使用。
 - `--stop`：立即停止当前播放和队列。用户说“停”“别读了”时使用。
+- `--set-voice`：把音色保存为本机默认，不朗读。
+- `--set-config KEY=VALUE`：保存其他配置，例如 `--set-config edge_rate=+10%`。
+- `--show-config`：显示配置文件路径和当前配置。
 - `--max-chars 400`：显式限制文本长度；默认 0，表示不截断。
 - `--dry-run`：只显示清理后的文本、音色和分段数，不播放，用于检查。
 - `--engine say`：强制离线系统语音，仅在 Edge 不可用或用户明确要求离线时使用。
